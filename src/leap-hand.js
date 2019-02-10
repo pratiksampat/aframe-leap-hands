@@ -73,23 +73,12 @@ const Component = AFRAME.registerComponent('leap-hand', {
     }
   },
 
-  tick: function () {
+  tick: function (time) {
     var hand = this.getHand();
-
     if (hand && hand.valid) {
       this.handMesh.scaleTo(hand);
       this.handMesh.formTo(hand);
-      this.grabStrengthBuffer.push(hand.grabStrength);
-      this.pinchStrengthBuffer.push(hand.pinchStrength);
-      this.grabStrength = circularArrayAvg(this.grabStrengthBuffer);
-      this.pinchStrength = circularArrayAvg(this.pinchStrengthBuffer);
-      var isHolding = Math.max(this.grabStrength, this.pinchStrength)
-        > (this.isHolding ? this.data.releaseSensitivity : this.data.holdSensitivity);
-      this.intersector.update(this.data, this.el.object3D, hand, isHolding);
-      if ( isHolding && !this.isHolding) this.hold(hand);
-      if (!isHolding &&  this.isHolding) this.release(hand);
-    } else if (this.isHolding) {
-      this.release(null);
+      this.detect(hand,time);
     }
 
     if (hand && !this.isVisible) {
@@ -102,6 +91,34 @@ const Component = AFRAME.registerComponent('leap-hand', {
       this.intersector.hide();
     }
     this.isVisible = !!hand;
+  },
+
+  detect: function(hand,time){
+    // Default gestures
+    if(hand.frame.gestures.length > 0){
+      hand.frame.gestures.forEach(function(gesture){
+        if(gesture.type == "circle" && gesture.state == "stop"){
+          console.log("Circle detected");
+        }
+      });
+    }
+    // Custom gestures
+    if(hand.indexFinger.extended && hand.middleFinger.extended 
+      && !hand.ringFinger.extended && !hand.pinky.extended){
+      console.log("Peace gesture");
+    }
+    else{
+      this.grabStrengthBuffer.push(hand.grabStrength);
+      this.pinchStrengthBuffer.push(hand.pinchStrength);
+      this.grabStrength = circularArrayAvg(this.grabStrengthBuffer);
+      this.pinchStrength = circularArrayAvg(this.pinchStrengthBuffer);
+      var isHolding = Math.max(this.grabStrength, this.pinchStrength)
+        > (this.isHolding ? this.data.releaseSensitivity : this.data.holdSensitivity);
+      this.intersector.update(this.data, this.el.object3D, hand, isHolding);
+      if ( isHolding && !this.isHolding) this.hold(hand);
+      if (!isHolding &&  this.isHolding) this.release(hand); 
+     }
+    return true;
   },
 
   getHand: function () {
