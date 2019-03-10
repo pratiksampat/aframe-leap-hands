@@ -15,6 +15,7 @@ const Component = AFRAME.registerComponent('leap-hand', {
     holdDistance:       {default: 0.2}, // m
     holdDebounce:       {default: 100}, // ms
     holdSelector:       {default: '[holdable]'},
+    tapSelector:        {default: '[tappable]'},
     holdSensitivity:    {default: 0.95}, // [0,1]
     releaseSensitivity: {default: 0.75}, // [0,1]
     debug:              {default: false}
@@ -22,7 +23,6 @@ const Component = AFRAME.registerComponent('leap-hand', {
 
   init: function () {
     this.system = this.el.sceneEl.systems.leap;
-
     this.handID = nextID++;
     this.hand = /** @type {Leap.Hand} */ null;
     this.handBody = /** @type {HandBody} */ null;
@@ -46,6 +46,9 @@ const Component = AFRAME.registerComponent('leap-hand', {
     if (this.data.debug) {
       this.el.object3D.add(this.intersector.getMesh());
     }
+
+    this.safeDetect = true;
+    this.startTime;
   },
 
   update: function () {
@@ -78,7 +81,15 @@ const Component = AFRAME.registerComponent('leap-hand', {
     if (hand && hand.valid) {
       this.handMesh.scaleTo(hand);
       this.handMesh.formTo(hand);
-      this.detect(hand,time);
+      if(this.safeDetect == true)
+        this.detect(hand,time);
+      else{
+        var elapsed = new Date().getTime() - this.startTime;
+        if(elapsed > 1000){
+          this.safeDetect = true;
+          console.log("Gesture unlocked");
+        }
+      }
     }
 
     if (hand && !this.isVisible) {
@@ -95,17 +106,72 @@ const Component = AFRAME.registerComponent('leap-hand', {
 
   detect: function(hand,time){
     // Default gestures
+    var self = this;
     if(hand.frame.gestures.length > 0){
       hand.frame.gestures.forEach(function(gesture){
         if(gesture.type == "circle" && gesture.state == "stop"){
-          console.log("Circle detected");
+          var eventDetail = self.getEventDetail(hand);
+          self.el.emit('leap-circle',eventDetail);
+          self.safeDetect = false;
+          self.startTime = new Date().getTime();
         }
+        else if(gesture.type == "swipe") {
+          //Classify swipe as either horizontal or vertical
+          var isHorizontal = Math.abs(gesture.direction[0]) > Math.abs(gesture.direction[1]);
+          var swipeDirection = 'left';
+          //Classify as right-left or up-down
+          if(isHorizontal){
+            if(gesture.direction[0] > 0){
+              swipeDirection = "right";
+            } 
+            else {
+              swipeDirection = "left";
+            }
+          } 
+          else { //vertical
+            if(gesture.direction[1] > 0){
+              swipeDirection = "up";
+            } 
+            else {
+              swipeDirection = "down";
+            }                  
+          }
+          var eventDetail = self.getEventDetail(hand);
+          eventDetail.swipeDirection = swipeDirection;
+          self.el.emit('leap-swipe',eventDetail);
+          self.safeDetect = false;
+          self.startTime = new Date().getTime();
+        }
+        // else if(gesture.type == "screenTap"){
+         
+        // }
       });
     }
-    // Custom gestures
-    if(hand.indexFinger.extended && hand.middleFinger.extended 
+    if(hand.indexFinger.extended && !hand.middleFinger.extended 
       && !hand.ringFinger.extended && !hand.pinky.extended){
-      console.log("Peace gesture");
+        console.log("Keytap");
+        var objects, results,
+        eventDetail = self.getEventDetail(hand);
+        objects = [].slice.call(self.el.sceneEl.querySelectorAll(self.data.tapSelector))
+          .map(function (el) { return el.object3D; });
+        console.log(objects);
+        results = self.intersector.intersectObjects(objects, true);
+        console.log(results);
+        self.holdTarget = results[0] && results[0].object && results[0].object.el;
+        if (self.holdTarget) {
+          console.log("Keytap-emitted");
+          self.holdTarget.emit('leap-tap', eventDetail);
+        }
+        self.safeDetect = false;
+        self.startTime = new Date().getTime();
+      }
+    // Simple Finger gestures
+    else if(hand.indexFinger.extended && hand.middleFinger.extended 
+      && !hand.ringFinger.extended && !hand.pinky.extended){
+        var eventDetail = self.getEventDetail(hand);
+        self.el.emit('leap-peace',eventDetail);
+        self.safeDetect = false;
+        self.startTime = new Date().getTime();
     }
     else{
       this.grabStrengthBuffer.push(hand.grabStrength);
@@ -120,13 +186,11 @@ const Component = AFRAME.registerComponent('leap-hand', {
      }
     return true;
   },
-
-  getHand: function () {
+  getHand: function ()   {
     var data = this.data,
         frame = this.system.getFrame();
     return frame.hands.length ? frame.hands[frame.hands[0].type === data.hand ? 0 : 1] : null;
   },
-
   hold: function (hand) {
     var objects, results,
         eventDetail = this.getEventDetail(hand);

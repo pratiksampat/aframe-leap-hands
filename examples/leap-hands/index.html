@@ -6,18 +6,60 @@
     <title>Examples • Leap Hands</title>
     <script src="https://aframe.io/releases/0.8.2/aframe.min.js"></script>
     <script src="../../dist/aframe-leap-hands.umd.js"></script>
+    <script>
+        // AFRAME.registerComponent('circable', {
+        
+        //   init: function () {
+        //     this.handID =     /** @type {number} */            null;
+        //     this.el.addEventListener('leap-circle', this.circ.bind(this));
+        //   },
+        
+        //   circ: function (e) {
+        //     if (this.handID) return;
+        //     console.log("Circle event fired");
+        //     this.handID = e.detail.handID;
+        //   }
+        // });
+
+        AFRAME.registerComponent('swipable',{
+          init: function () {
+            this.handID =     /** @type {number} */            null;
+            this.el.addEventListener('leap-swipe', this.swipeto.bind(this));
+          },
+        
+          swipeto: function (e) {
+            console.log("Swipe fired : ",e.detail.swipeDirection);
+            this.handID = e.detail.handID;
+          }
+        });
+
+        AFRAME.registerComponent('tappable',{
+          init: function(){
+            this.el.addEventListener('leap-tap', this.tap.bind(this));
+          },
+
+          tap: function(e){
+            this.originalColor = this.el.getAttribute('material').color;
+            this.el.setAttribute('material', 'color', 'orange');
+            console.log("Tap fired");
+          }
+          
+        });
+      </script>
   </head>
   <body>
-    <a-scene>
+    <a-scene swipable>
       <!-- Player -->
       <a-entity camera="near: 0.01" look-controls>
         <a-entity leap-hand="hand: left"></a-entity>
         <a-entity leap-hand="hand: right"></a-entity>
       </a-entity>
-
       <!-- Terrain -->
       <a-grid></a-grid>
-
+      <a-box width="0.1" height="0.1" depth="0.1" position="0 -0.1 -0.3" color="red"
+             tappable></a-box>
+      <!-- <a-box width="0.1" height="0.1" depth="0.1" position="0.2 -0.1 -0.4" color="red"
+             tappable></a-box> -->
       <!-- Lighting -->
       <a-light type="ambient" color="#ccc"></a-light>
       <a-light color="#ddf" distance="100" intensity="0.4" type="point"></a-light>
