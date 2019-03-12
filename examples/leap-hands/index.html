@@ -40,7 +40,10 @@
 
           tap: function(e){
             this.originalColor = this.el.getAttribute('material').color;
-            this.el.setAttribute('material', 'color', 'orange');
+            if(this.originalColor == 'orange')
+              this.el.setAttribute('material', 'color', 'blue');
+            else
+              this.el.setAttribute('material', 'color', 'orange');
             console.log("Tap fired");
           }
           
@@ -48,7 +51,7 @@
       </script>
   </head>
   <body>
-    <a-scene swipable>
+    <a-scene leap="host: 127.0.0.1" swipable>
       <!-- Player -->
       <a-entity camera="near: 0.01" look-controls>
         <a-entity leap-hand="hand: left"></a-entity>
@@ -56,9 +59,9 @@
       </a-entity>
       <!-- Terrain -->
       <a-grid></a-grid>
-      <a-box width="0.1" height="0.1" depth="0.1" position="0 -0.1 -0.3" color="red"
+      <a-box width="0.1" height="0.1" depth="0.1" position="0 -0.1 -0.4" color="red"
              tappable></a-box>
-      <!-- <a-box width="0.1" height="0.1" depth="0.1" position="0.2 -0.1 -0.4" color="red"
+      <!-- <a-box width="0.1" height="0.1" depth="0.1" position="0 0.03 -0.3" color="red"
              tappable></a-box> -->
       <!-- Lighting -->
       <a-light type="ambient" color="#ccc"></a-light>

@@ -48,7 +48,7 @@ const Component = AFRAME.registerComponent('leap-hand', {
     }
 
     this.safeDetect = true;
-    this.startTime;
+    this.tickCount = 0;
   },
 
   update: function () {
@@ -81,15 +81,7 @@ const Component = AFRAME.registerComponent('leap-hand', {
     if (hand && hand.valid) {
       this.handMesh.scaleTo(hand);
       this.handMesh.formTo(hand);
-      if(this.safeDetect == true)
-        this.detect(hand,time);
-      else{
-        var elapsed = new Date().getTime() - this.startTime;
-        if(elapsed > 1000){
-          this.safeDetect = true;
-          console.log("Gesture unlocked");
-        }
-      }
+      this.detect(hand,time);
     }
 
     if (hand && !this.isVisible) {
@@ -107,84 +99,87 @@ const Component = AFRAME.registerComponent('leap-hand', {
   detect: function(hand,time){
     // Default gestures
     var self = this;
-    if(hand.frame.gestures.length > 0){
-      hand.frame.gestures.forEach(function(gesture){
-        if(gesture.type == "circle" && gesture.state == "stop"){
-          var eventDetail = self.getEventDetail(hand);
-          self.el.emit('leap-circle',eventDetail);
-          self.safeDetect = false;
-          self.startTime = new Date().getTime();
-        }
-        else if(gesture.type == "swipe") {
-          //Classify swipe as either horizontal or vertical
-          var isHorizontal = Math.abs(gesture.direction[0]) > Math.abs(gesture.direction[1]);
-          var swipeDirection = 'left';
-          //Classify as right-left or up-down
-          if(isHorizontal){
-            if(gesture.direction[0] > 0){
-              swipeDirection = "right";
-            } 
-            else {
-              swipeDirection = "left";
-            }
-          } 
-          else { //vertical
-            if(gesture.direction[1] > 0){
-              swipeDirection = "up";
-            } 
-            else {
-              swipeDirection = "down";
-            }                  
+    if(self.safeDetect == true){
+      if(hand.frame.gestures.length > 0){
+        hand.frame.gestures.forEach(function(gesture){
+          if(gesture.type == "circle" && gesture.state == "stop"){
+            var eventDetail = self.getEventDetail(hand);
+            self.el.emit('leap-circle',eventDetail);
+            self.safeDetect = false;
           }
-          var eventDetail = self.getEventDetail(hand);
-          eventDetail.swipeDirection = swipeDirection;
-          self.el.emit('leap-swipe',eventDetail);
-          self.safeDetect = false;
-          self.startTime = new Date().getTime();
-        }
-        // else if(gesture.type == "screenTap"){
-         
-        // }
-      });
-    }
-    if(hand.indexFinger.extended && !hand.middleFinger.extended 
-      && !hand.ringFinger.extended && !hand.pinky.extended){
-        console.log("Keytap");
-        var objects, results,
-        eventDetail = self.getEventDetail(hand);
-        objects = [].slice.call(self.el.sceneEl.querySelectorAll(self.data.tapSelector))
-          .map(function (el) { return el.object3D; });
-        console.log(objects);
-        results = self.intersector.intersectObjects(objects, true);
-        console.log(results);
-        self.holdTarget = results[0] && results[0].object && results[0].object.el;
-        if (self.holdTarget) {
-          console.log("Keytap-emitted");
-          self.holdTarget.emit('leap-tap', eventDetail);
-        }
-        self.safeDetect = false;
-        self.startTime = new Date().getTime();
+          else if(gesture.type == "swipe") {
+            //Classify swipe as either horizontal or vertical
+            var isHorizontal = Math.abs(gesture.direction[0]) > Math.abs(gesture.direction[1]);
+            var swipeDirection = 'left';
+            //Classify as right-left or up-down
+            if(isHorizontal){
+              if(gesture.direction[0] > 0){
+                swipeDirection = "right";
+              } 
+              else {
+                swipeDirection = "left";
+              }
+            } 
+            else { //vertical
+              if(gesture.direction[1] > 0){
+                swipeDirection = "up";
+              } 
+              else {
+                swipeDirection = "down";
+              }                  
+            }
+            var eventDetail = self.getEventDetail(hand);
+            eventDetail.swipeDirection = swipeDirection;
+            self.el.emit('leap-swipe',eventDetail);
+            self.safeDetect = false;
+          }
+        });
       }
-    // Simple Finger gestures
-    else if(hand.indexFinger.extended && hand.middleFinger.extended 
-      && !hand.ringFinger.extended && !hand.pinky.extended){
-        var eventDetail = self.getEventDetail(hand);
-        self.el.emit('leap-peace',eventDetail);
-        self.safeDetect = false;
-        self.startTime = new Date().getTime();
+      if(hand.indexFinger.extended && !hand.middleFinger.extended 
+        && !hand.ringFinger.extended && !hand.pinky.extended){ // Kinda works for now, will do other checks like rotation later
+          console.log("Keytap");
+          var objects, results,
+          eventDetail = self.getEventDetail(hand);
+          objects = [].slice.call(self.el.sceneEl.querySelectorAll(self.data.tapSelector))
+            .map(function (el) { return el.object3D; });
+          console.log(objects);
+          results = self.intersector.intersectObjects(objects, true);
+          console.log(results);
+          self.holdTarget = results[0] && results[0].object && results[0].object.el;
+          if (self.holdTarget) {
+            console.log("Keytap-emitted");
+            self.holdTarget.emit('leap-tap', eventDetail);
+          }
+          self.safeDetect = false;
+        }
+      // Simple Finger gestures
+      else if(hand.indexFinger.extended && hand.middleFinger.extended 
+        && !hand.ringFinger.extended && !hand.pinky.extended){
+          var eventDetail = self.getEventDetail(hand);
+          self.el.emit('leap-peace',eventDetail);
+          self.safeDetect = false;
+      }
+      else{
+        this.grabStrengthBuffer.push(hand.grabStrength);
+        this.pinchStrengthBuffer.push(hand.pinchStrength);
+        this.grabStrength = circularArrayAvg(this.grabStrengthBuffer);
+        this.pinchStrength = circularArrayAvg(this.pinchStrengthBuffer);
+        var isHolding = Math.max(this.grabStrength, this.pinchStrength)
+          > (this.isHolding ? this.data.releaseSensitivity : this.data.holdSensitivity);
+        this.intersector.update(this.data, this.el.object3D, hand, isHolding);
+        if ( isHolding && !this.isHolding) this.hold(hand);
+        if (!isHolding &&  this.isHolding) this.release(hand); 
+       }
     }
-    else{
-      this.grabStrengthBuffer.push(hand.grabStrength);
-      this.pinchStrengthBuffer.push(hand.pinchStrength);
-      this.grabStrength = circularArrayAvg(this.grabStrengthBuffer);
-      this.pinchStrength = circularArrayAvg(this.pinchStrengthBuffer);
-      var isHolding = Math.max(this.grabStrength, this.pinchStrength)
-        > (this.isHolding ? this.data.releaseSensitivity : this.data.holdSensitivity);
-      this.intersector.update(this.data, this.el.object3D, hand, isHolding);
-      if ( isHolding && !this.isHolding) this.hold(hand);
-      if (!isHolding &&  this.isHolding) this.release(hand); 
-     }
-    return true;
+    else{ // Not safe to detect just yet - must detect at human speeds
+      self.tickCount+=1;
+      // Don't detect anything for the next 100 frames. 
+      //(Current frame-rate 60FPS, So about 1.5 seconds) - Change this if you're doing for a different frame rate
+      if(self.tickCount >= 100){ 
+        self.safeDetect = true;
+        self.tickCount = 0;
+      }
+    }
   },
   getHand: function ()   {
     var data = this.data,
