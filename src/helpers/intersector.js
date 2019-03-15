@@ -7,7 +7,7 @@ function Intersector () {
   this.raycaster = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(), 0, 0.2);
 }
 
-Intersector.prototype.update = function (options, object3D, hand, isHolding) {
+Intersector.prototype.update = function (options, object3D, hand, type) {
   // Update options.
   this.holdDistance = options.holdDistance;
   this.debug = options.debug;
@@ -19,7 +19,13 @@ Intersector.prototype.update = function (options, object3D, hand, isHolding) {
   this.raycaster.ray.direction.y += hand.direction[1] / 2;
   this.raycaster.ray.direction.z += hand.direction[2] / 2;
   this.raycaster.ray.direction.normalize();
-  this.raycaster.ray.origin.fromArray(hand.palmPosition);
+  // console.log("Position of the hand : ",hand.palmPosition);
+  console.log(hand);
+  if(type == "tap"){
+    this.raycaster.ray.origin.fromArray(hand.fingers[1].dipPosition);
+  }
+  else
+    this.raycaster.ray.origin.fromArray(hand.palmPosition);
   object3D.localToWorld(this.raycaster.ray.origin);
 
   // Update arrow helper.
@@ -29,7 +35,7 @@ Intersector.prototype.update = function (options, object3D, hand, isHolding) {
     object3D.worldToLocal(this.arrowHelper.position);
     this.arrowHelper.setDirection(this.raycaster.ray.direction);
     this.arrowHelper.setLength(this.holdDistance);
-    this.arrowHelper.setColor(isHolding ? 0xFF0000 : 0x00FF00);
+    this.arrowHelper.setColor(type ? 0xFF0000 : 0x00FF00);
   } else {
     delete this.arrowHelper;
   }

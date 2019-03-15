@@ -49,6 +49,7 @@ const Component = AFRAME.registerComponent('leap-hand', {
 
     this.safeDetect = true;
     this.tickCount = 0;
+    this.thresholdTickCount = 100;
   },
 
   update: function () {
@@ -135,9 +136,11 @@ const Component = AFRAME.registerComponent('leap-hand', {
           }
         });
       }
+      // Tap gesture
       if(hand.indexFinger.extended && !hand.middleFinger.extended 
         && !hand.ringFinger.extended && !hand.pinky.extended){ // Kinda works for now, will do other checks like rotation later
           console.log("Keytap");
+          this.intersector.update(this.data, this.el.object3D, hand, "tap");
           var objects, results,
           eventDetail = self.getEventDetail(hand);
           objects = [].slice.call(self.el.sceneEl.querySelectorAll(self.data.tapSelector))
@@ -151,12 +154,20 @@ const Component = AFRAME.registerComponent('leap-hand', {
             self.holdTarget.emit('leap-tap', eventDetail);
           }
           self.safeDetect = false;
+          self.thresholdTickCount = 30; // Play around with this rate to get it just right
         }
       // Simple Finger gestures
       else if(hand.indexFinger.extended && hand.middleFinger.extended 
         && !hand.ringFinger.extended && !hand.pinky.extended){
           var eventDetail = self.getEventDetail(hand);
           self.el.emit('leap-peace',eventDetail);
+          self.safeDetect = false;
+      }
+      else if(!hand.indexFinger.extended && !hand.middleFinger.extended 
+        && !hand.ringFinger.extended && !hand.pinky.extended){
+          var eventDetail = self.getEventDetail(hand);
+          console.log("fist");
+          self.el.emit('leap-fist',eventDetail);
           self.safeDetect = false;
       }
       else{
@@ -175,9 +186,10 @@ const Component = AFRAME.registerComponent('leap-hand', {
       self.tickCount+=1;
       // Don't detect anything for the next 100 frames. 
       //(Current frame-rate 60FPS, So about 1.5 seconds) - Change this if you're doing for a different frame rate
-      if(self.tickCount >= 100){ 
+      if(self.tickCount >= self.thresholdTickCount){ 
         self.safeDetect = true;
         self.tickCount = 0;
+        self.thresholdTickCount = 100;
       }
     }
   },
