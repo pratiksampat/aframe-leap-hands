@@ -49,33 +49,36 @@
           
         });
 
-        AFRAME.registerComponent('holdable',{
-          init: function(){
-            this.physics =    /** @type {AFRAME.System}     */ this.el.sceneEl.systems.physics;
-            this.constraint = /** @type {CANNON.Constraint} */ null;
-            this.handID =     /** @type {number} */            null;
-            this.el.addEventListener('leap-holdstart', this.onHoldStart.bind(this));
-            this.el.addEventListener('leap-holdstop', this.onHoldStop.bind(this));
-          },
-          onHoldStart: function (e) {
-            if (this.handID) return;
+        AFRAME.registerComponent('holdable', {
+  schema: {activeColor: {default: 'orange'}},
 
-            this.originalColor = this.el.getAttribute('material').color;
-            this.el.setAttribute('material', 'color', "blue");
-            // this.constraint = new CANNON.LockConstraint(this.el.body, e.detail.body);
-            // this.physics.addConstraint(this.constraint);
-            this.handID = e.detail.handID;
-          },
+  init: function () {
+    this.physics =    /** @type {AFRAME.System}     */ this.el.sceneEl.systems.physics;
+    this.constraint = /** @type {CANNON.Constraint} */ null;
+    this.handID =     /** @type {number} */            null;
+    this.el.addEventListener('leap-holdstart', this.onHoldStart.bind(this));
+    this.el.addEventListener('leap-holdstop', this.onHoldStop.bind(this));
+  },
 
-          onHoldStop: function (e) {
-            if (e.detail.handID !== this.handID) return;
+  onHoldStart: function (e) {
+    if (this.handID) return;
 
-            this.el.setAttribute('material', 'color', "green");
-            // this.physics.removeConstraint(this.constraint);
-            // this.constraint = null;
-            this.handID = null;
-          }
-        });
+    this.originalColor = this.el.getAttribute('material').color;
+    this.el.setAttribute('material', 'color', this.data.activeColor);
+    this.constraint = new CANNON.LockConstraint(this.el.body, e.detail.body);
+    this.physics.addConstraint(this.constraint);
+    this.handID = e.detail.handID;
+  },
+
+  onHoldStop: function (e) {
+    if (e.detail.handID !== this.handID) return;
+
+    this.el.setAttribute('material', 'color', this.originalColor);
+    this.physics.removeConstraint(this.constraint);
+    this.constraint = null;
+    this.handID = null;
+  }
+});
       </script>
   </head>
   <body>
@@ -86,13 +89,13 @@
         <a-entity leap-hand="hand: right"></a-entity>
       </a-entity>
       <!-- Terrain -->
-      <a-grid></a-grid>
-      <a-box width="0.05" height="0.05" depth="0.1" position="0 -0.05 -0.3" color="red"
-             tappable></a-box>
-      <a-box width="0.05" height="0.05" depth="0.05" position="0.1 -0.05 -0.3" color="red"
-             tappable></a-box>
-      <a-box width="0.05" height="0.05" depth="0.05" position="-0.1 -0.05 -0.3" color="red"
-             tappable></a-box>
+      <a-grid cards></a-grid>
+      <a-box width="0.05" height="0.05" depth="0.01" position="0 -0.05 -0.3" color="red"
+      tappable></a-box>
+      <a-box width="0.05" height="0.05" depth="0.01" position="0.1 -0.05 -0.3" color="red"
+      tappable></a-box>
+      <a-box width="0.05" height="0.05" depth="0.01" position="-0.1 -0.05 -0.3" color="red"
+      holdable></a-box>
       
       <!-- <a-box width="0.05" height="0.05" depth="0.05" position="-0.20 -0.05 -0.3" color="red"
              tappable></a-box>
@@ -109,11 +112,11 @@
       <a-box width="0.05" height="0.05" depth="0.05" position="0.40 -0.05 -0.27" color="red"
              tappable rotation="0 -45 0"></a-box>   -->
       <!--  -->
-      <a-box width="0.05" height="0.05" depth="0.05" position="0 0.03 -0.3" color="red"
+      <a-box width="0.05" height="0.05" depth="0.01" position="0 0.03 -0.3" color="red"
              tappable></a-box>
-      <a-box width="0.05" height="0.05" depth="0.05" position="0.1 0.03 -0.3" color="red"
+      <a-box width="0.05" height="0.05" depth="0.01" position="0.1 0.03 -0.3" color="red"
             tappable></a-box>
-      <a-box width="0.05" height="0.05" depth="0.05" position="-0.1 0.03 -0.3" color="red"
+      <a-box width="0.05" height="0.05" depth="0.01" position="-0.1 0.03 -0.3" color="red"
             tappable></a-box>
       <!-- Lighting -->
       <a-light type="ambient" color="#ccc"></a-light>

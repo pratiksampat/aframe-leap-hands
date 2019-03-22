@@ -2,9 +2,13 @@ import { HandMesh } from '../lib/leap.hand-mesh';
 import { HandBody } from './helpers/hand-body';
 import { Intersector } from './helpers/intersector';
 import { CircularArray } from '../lib/circular-array';
+// import { throws } from 'assert';
 
 var nextID = 1;
 
+var rawColor = 'red';
+var rawThickness = '0.01';
+var path = "";
 /**
  * A-Frame component for a single Leap Motion hand.
  */
@@ -18,10 +22,12 @@ const Component = AFRAME.registerComponent('leap-hand', {
     tapSelector:        {default: '[tappable]'},
     holdSensitivity:    {default: 0.95}, // [0,1]
     releaseSensitivity: {default: 0.75}, // [0,1]
-    debug:              {default: false}
+    debug:              {default: false},
+    rawMode:            {default: false}
   },
 
   init: function () {
+    console.log(this.data.rawMode);
     this.system = this.el.sceneEl.systems.leap;
     this.handID = nextID++;
     this.hand = /** @type {Leap.Hand} */ null;
@@ -50,6 +56,8 @@ const Component = AFRAME.registerComponent('leap-hand', {
     this.safeDetect = true;
     this.tickCount = 0;
     this.thresholdTickCount = 100;
+    this.rawColorArr = ["blue","green","yellow","red", "orange", "black"];
+    this.rawThicknessrArr = ["0.01", "0.005", "0.015", "0.001"];
   },
 
   update: function () {
@@ -82,7 +90,134 @@ const Component = AFRAME.registerComponent('leap-hand', {
     if (hand && hand.valid) {
       this.handMesh.scaleTo(hand);
       this.handMesh.formTo(hand);
-      this.detect(hand,time);
+      if(!this.data.rawMode)
+        this.detect(hand,time);
+      //================== Raw mode ====================
+      else{ 
+        var self = this;
+        // console.log(hand.indexFinger.dipPosition);
+        if(hand.type == "left"){ // when left hand detected don't draw. 
+          // First of all take everything off the screen
+          if(hand.indexFinger.extended && !hand.middleFinger.extended 
+            && !hand.ringFinger.extended && !hand.pinky.extended){ // Single finger extended
+              // Make all the objects invisible
+              objects = this.el.sceneEl.querySelectorAll("a-sphere")
+              for(var i=0; i<objects.length; i++){
+                objects[i].setAttribute('visible',false);
+              }
+              rawColor = this.rawColorArr[Math.floor(Math.random() * this.rawColorArr.length)];
+              console.log(rawColor);
+              var s = document.getElementById("rawColor");
+              var t = document.getElementById("rawColorText");
+              var s1 = document.getElementById('rawThinkness')
+              var t1 = document.getElementById('rawThicknessText')
+              if(s)
+                s.outerHTML = "";
+              if(t)
+                t.outerHTML = "";
+              if(s1)
+                s1.outerHTML = "";
+              if(t1)
+                t1.outerHTML = "";
+              var sphere = document.createElement('a-sphere');
+              sphere.setAttribute('id','rawColor');
+              sphere.setAttribute('color',rawColor);
+              sphere.setAttribute('radius','0.1');
+              sphere.setAttribute('position','0 0 -2');
+              this.el.sceneEl.appendChild(sphere);
+
+              var text = document.createElement('a-text');
+              text.setAttribute('id','rawColorText');
+              text.setAttribute('color','black');
+              text.setAttribute('value',"Color");
+              text.setAttribute('position','0.2 0 -2')
+              this.el.sceneEl.appendChild(text);
+          }
+          else if(hand.indexFinger.extended && hand.middleFinger.extended 
+            && !hand.ringFinger.extended && !hand.pinky.extended){ // Dual finger extended
+              // Make all the objects invisible
+              objects = this.el.sceneEl.querySelectorAll("a-tube")
+              for(var i=0; i<objects.length; i++){
+                objects[i].setAttribute('visible',false);
+              }
+              rawThickness = this.rawThicknessrArr[Math.floor(Math.random() * this.rawThicknessrArr.length)];
+              console.log(rawThickness);
+              var s = document.getElementById("rawColor");
+              var t = document.getElementById("rawColorText");
+              var s1 = document.getElementById('rawThinkness')
+              var t1 = document.getElementById('rawThicknessText')
+              if(s)
+                s.outerHTML = "";
+              if(t)
+                t.outerHTML = "";
+              if(s1)
+                s1.outerHTML = "";
+              if(t1)
+                t1.outerHTML = "";
+              var sphere = document.createElement('a-sphere');
+              sphere.setAttribute('id','rawThinkness');
+              sphere.setAttribute('color',rawColor);
+              sphere.setAttribute('radius',rawThickness);
+              sphere.setAttribute('position','0 0 -0.150');
+              this.el.sceneEl.appendChild(sphere);
+
+              var text = document.createElement('a-text');
+              text.setAttribute('id','rawThicknessText');
+              text.setAttribute('color','black');
+              text.setAttribute('value',"Brush");
+              text.setAttribute('position','0.2 0 -2')
+              this.el.sceneEl.appendChild(text);
+          }
+        }
+        else{
+          objects = this.el.sceneEl.querySelectorAll("a-tube")
+          for(var i=0; i<objects.length; i++){
+            objects[i].setAttribute('visible',true);
+          }
+          
+          var s = document.getElementById('rawColor')
+          var t = document.getElementById('rawColorText');
+          var s1 = document.getElementById('rawThinkness')
+          var t1 = document.getElementById('rawThicknessText')
+          if(s)
+            s.setAttribute('visible',false);
+          if(t)
+            t.setAttribute('visible',false);
+          if(s1)
+            s1.setAttribute('visible',false);
+          if(t1)
+            t1.setAttribute('visible',false);
+          
+          this.grabStrengthBuffer.push(hand.grabStrength);
+          this.pinchStrengthBuffer.push(hand.pinchStrength);
+          this.grabStrength = circularArrayAvg(this.grabStrengthBuffer);
+          this.pinchStrength = circularArrayAvg(this.pinchStrengthBuffer);
+          var isHolding = Math.max(this.grabStrength, this.pinchStrength)
+            > (this.isHolding ? this.data.releaseSensitivity : this.data.holdSensitivity);
+          if ( isHolding && !this.isHolding){
+            var pos = hand.indexFinger.dipPosition[0] + ' '
+            + hand.indexFinger.dipPosition[1] + ' '
+            + hand.indexFinger.dipPosition[2];
+
+            path += pos + ', ';
+            console.log(path);
+            var tube = document.createElement('a-tube');
+            console.log(rawColor);
+            tube.setAttribute('material',"color: "+rawColor);
+            tube.setAttribute('color',rawColor);
+            tube.setAttribute('radius',rawThickness);
+            // sphere.setAttribute('position',pos);
+            tube.setAttribute('path',path);
+            // console.log(sphere);
+            // console.log(this.el.sceneEl);
+            this.el.sceneEl.appendChild(tube);
+          }
+          else{
+            path = "";
+          }
+        }
+        // console.log("No more detection. It's raw mode baby");
+      }
     }
 
     if (hand && !this.isVisible) {
@@ -100,6 +235,7 @@ const Component = AFRAME.registerComponent('leap-hand', {
   detect: function(hand,time){
     // Default gestures
     var self = this;
+    // console.log(hand);
     if(self.safeDetect == true){
       if(hand.frame.gestures.length > 0){
         hand.frame.gestures.forEach(function(gesture){
@@ -133,6 +269,7 @@ const Component = AFRAME.registerComponent('leap-hand', {
             eventDetail.swipeDirection = swipeDirection;
             self.el.emit('leap-swipe',eventDetail);
             self.safeDetect = false;
+            // self.thresholdTickCount = 300; 
           }
         });
       }
@@ -140,6 +277,7 @@ const Component = AFRAME.registerComponent('leap-hand', {
       if(hand.indexFinger.extended && !hand.middleFinger.extended 
         && !hand.ringFinger.extended && !hand.pinky.extended){ // Kinda works for now, will do other checks like rotation later
           console.log("Keytap");
+          // Update the intersector to change the raycaster position to the distal point on the index finger
           this.intersector.update(this.data, this.el.object3D, hand, "tap");
           var objects, results,
           eventDetail = self.getEventDetail(hand);
@@ -160,6 +298,7 @@ const Component = AFRAME.registerComponent('leap-hand', {
       else if(hand.indexFinger.extended && hand.middleFinger.extended 
         && !hand.ringFinger.extended && !hand.pinky.extended){
           var eventDetail = self.getEventDetail(hand);
+          console.log("peace");
           self.el.emit('leap-peace',eventDetail);
           self.safeDetect = false;
       }
@@ -190,6 +329,7 @@ const Component = AFRAME.registerComponent('leap-hand', {
         self.safeDetect = true;
         self.tickCount = 0;
         self.thresholdTickCount = 100;
+        console.log("Gesture unlocked");
       }
     }
   },

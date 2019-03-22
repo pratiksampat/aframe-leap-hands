@@ -9,60 +9,141 @@
     <script src="//cdn.rawgit.com/donmccurdy/aframe-physics-system/v3.2.0/dist/aframe-physics-system.min.js"></script>
     <script src="../../dist/aframe-leap-hands.umd.js"></script>
     <script>
-AFRAME.registerComponent('holdable', {
-  schema: {activeColor: {default: 'orange'}},
+      AFRAME.registerComponent('holdable', {
+        schema: {activeColor: {default: 'orange'}},
 
-  init: function () {
-    this.physics =    /** @type {AFRAME.System}     */ this.el.sceneEl.systems.physics;
-    this.constraint = /** @type {CANNON.Constraint} */ null;
-    this.handID =     /** @type {number} */            null;
-    this.el.addEventListener('leap-holdstart', this.onHoldStart.bind(this));
-    this.el.addEventListener('leap-holdstop', this.onHoldStop.bind(this));
-  },
+        init: function () {
+          this.physics =    /** @type {AFRAME.System}     */ this.el.sceneEl.systems.physics;
+          this.constraint = /** @type {CANNON.Constraint} */ null;
+          this.handID =     /** @type {number} */            null;
+          this.el.addEventListener('leap-holdstart', this.onHoldStart.bind(this));
+          this.el.addEventListener('leap-holdstop', this.onHoldStop.bind(this));
+        },
 
-  onHoldStart: function (e) {
-    if (this.handID) return;
+        onHoldStart: function (e) {
+          if (this.handID) return;
 
-    this.originalColor = this.el.getAttribute('material').color;
-    this.el.setAttribute('material', 'color', this.data.activeColor);
-    this.constraint = new CANNON.LockConstraint(this.el.body, e.detail.body);
-    this.physics.addConstraint(this.constraint);
-    this.handID = e.detail.handID;
-  },
+          this.originalColor = this.el.getAttribute('material').color;
+          this.el.setAttribute('material', 'color', this.data.activeColor);
+          this.constraint = new CANNON.LockConstraint(this.el.body, e.detail.body);
+          this.physics.addConstraint(this.constraint);
+          this.handID = e.detail.handID;
+        },
 
-  onHoldStop: function (e) {
-    if (e.detail.handID !== this.handID) return;
+        onHoldStop: function (e) {
+          if (e.detail.handID !== this.handID) return;
 
-    this.el.setAttribute('material', 'color', this.originalColor);
-    this.physics.removeConstraint(this.constraint);
-    this.constraint = null;
-    this.handID = null;
-  }
-});
+          this.el.setAttribute('material', 'color', this.originalColor);
+          this.physics.removeConstraint(this.constraint);
+          this.constraint = null;
+          this.handID = null;
+        }
+      });
+      AFRAME.registerComponent('fistable',{
+          init: function () {
+            this.handID =     /** @type {number} */            null;
+            this.el.addEventListener('leap-fist', this.fist.bind(this));
+          },
+        
+          fist: function (e) {
+            // var el = document.getElementById('hold');
+
+            // var el = document.getElementsByClassName('hold');
+            var boxes = document.querySelectorAll('[holdable]');
+
+            for(var i=0; i<boxes.length; i++){
+              if(boxes[i].body.world.gravity.y == 0){
+                boxes[i].body.world.gravity.set(0,-9.8,0)
+              }
+              else{
+                boxes[i].body.applyImpulse(
+                /* impulse */        new CANNON.Vec3(0, 0.1, 0),
+                /* world position */ boxes[i].body.position
+                );
+                console.log(boxes[i].body.world.gravity.set(0,0,0));
+              }
+            }
+
+
+            // if(el.body.world.gravity.y == 0){
+            //   el.body.world.gravity.set(0,-9.8,0)
+            // }
+            // else{
+            //   console.log(el.body);
+            //   el.body.applyImpulse(
+            //     /* impulse */        new CANNON.Vec3(0, 0.1, 0),
+            //     /* world position */ el.body.position
+            //   );
+            //   console.log(el.body.world.gravity.set(0,0,0));
+            // } 
+           
+            console.log("Fist fired : ");
+            this.handID = e.detail.handID;
+          }
+      });
+
+      AFRAME.registerComponent('peaceable',{
+          init: function(){
+            this.handID =     /** @type {number} */            null;
+            this.creationToggle = false;
+            this.el.addEventListener('leap-peace', this.peace.bind(this));
+          },
+          peace: function(e){
+            console.log("Peace fired");
+            if(!this.creationToggle){
+              var boxes = document.querySelectorAll('[holdable]');
+              for(var i=0; i<boxes.length; i++){
+                boxes[i].setAttribute('visible',false);
+              }
+              var box = document.createElement('a-box');
+              box.setAttribute('height','0.1');
+              box.setAttribute('width','0.1');
+              box.setAttribute('depth','0.1');
+              box.setAttribute('color','yellow');
+              box.setAttribute('position','0 0.05 -0.2');
+              box.setAttribute('holdable','');
+              box.setAttribute('dynamic-body','shape: box');
+              console.log(box);
+              this.el.appendChild(box);
+              this.creationToggle = true;
+            }
+            else{
+              var boxes = document.querySelectorAll('[holdable]');
+              for(var i=0; i<boxes.length; i++){
+                boxes[i].setAttribute('dynamic-body','shape: box');
+                boxes[i].setAttribute('visible',true);
+              }
+              creationToggle = false;
+            }
+            this.handID = e.detail.handID;
+          }
+          
+      }); 
     </script>
   </head>
   <body>
-    <a-scene>
+    <a-scene leap="host: 127.0.0.1" physics="gravity: -9.8" fistable peaceable>
       <!-- Player -->
       <a-entity camera look-controls position="0 0 0">
         <a-entity leap-hand="hand: left; enablePhysics: true;"></a-entity>
         <a-entity leap-hand="hand: right; enablePhysics: true;"></a-entity>
+        <!-- <a-cylinder tappable color="blue" radius='0.02' height="0.0025" position="-0.125 0 -0.1" rotation="90 0 0">    -->
+        </a-cylinder>
       </a-entity>
-
       <!-- <a-box width="0.25" height="0.25" depth="0.25" position="-0.125 0.13 -0.5" color="red"
              holdable dynamic-body="shape: box"></a-box>
       <a-box width="0.25" height="0.25" depth="0.25" position="0.00 0.4 -0.5" color="green"
              holdable dynamic-body="shape: box"></a-box>
       <a-box width="0.25" height="0.25" depth="0.25" position="0.125 0.13 -0.5" color="blue"
              holdable dynamic-body="shape: box"></a-box> -->
-      <a-box width="0.1" height="0.1" depth="0.1" position="0 0.13 -0.3" color="red"
+      <a-box id="hold" width="0.1" height="0.1" depth="0.1" position="0 0.13 -0.3" color="red"
              holdable dynamic-body="shape: box"></a-box>
-      <a-box width="0.25" height="0.25" depth="0.25" position="0.00 0.4 -0.5" color="green"
+      <!-- <a-box id="hold" width="0.25" height="0.25" depth="0.25" position="0.00 0.4 -0.5" color="green"
              holdable dynamic-body="shape: box"></a-box>
-      <a-box width="0.25" height="0.25" depth="0.25" position="0.125 0.13 -0.5" color="blue"
-             holdable dynamic-body="shape: box"></a-box>
+      <a-box id="hold" width="0.25" height="0.25" depth="0.25" position="0.125 0.13 -0.5" color="blue"
+             holdable dynamic-body="shape: box"></a-box> -->
       <!-- Terrain -->
-      <a-grid static-body position="0 -0.2 0"></a-grid>
+      <a-grid src="" static-body position="0 -0.2 0"></a-grid>
 
       <!-- Lighting -->
       <a-light type="ambient" color="#ccc"></a-light>

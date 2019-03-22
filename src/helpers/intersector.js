@@ -19,8 +19,6 @@ Intersector.prototype.update = function (options, object3D, hand, type) {
   this.raycaster.ray.direction.y += hand.direction[1] / 2;
   this.raycaster.ray.direction.z += hand.direction[2] / 2;
   this.raycaster.ray.direction.normalize();
-  // console.log("Position of the hand : ",hand.palmPosition);
-  console.log(hand);
   if(type == "tap"){
     this.raycaster.ray.origin.fromArray(hand.fingers[1].dipPosition);
   }
