@@ -8,12 +8,55 @@
     <script src="//cdn.rawgit.com/donmccurdy/aframe-extras/v4.2.0/dist/aframe-extras.min.js"></script>
     <script src="//cdn.rawgit.com/donmccurdy/aframe-physics-system/v3.2.0/dist/aframe-physics-system.min.js"></script>
     <script src="../../dist/aframe-leap-hands.umd.js"></script>
+    <!-- <script>
+      var path = "";
+      AFRAME.registerComponent('holdable', {
+        schema: {activeColor: {default: 'orange'}},
+
+        init: function () {
+          this.handID =     /** @type {number} */            null;
+          console.log("Start");
+          this.el.addEventListener('leap-holdstart', this.onHoldStart.bind(this));
+          this.el.addEventListener('leap-holdstop', this.onHoldStop.bind(this));
+        },
+
+        onHoldStart: function (e) {
+          if (this.handID) return;
+          var hand = e.detail.hand;
+          setInterval(draw(hand,this.data.activeColor),10);
+          this.handID = e.detail.handID;
+        },
+
+        onHoldStop: function (e) {
+          if (e.detail.handID !== this.handID) return;
+          path = "";
+          console.log("Stop")
+          this.handID = null;
+        }
+      });
+
+      function draw(hand,activeColor){
+        var pos = hand.indexFinger.dipPosition[0] + ' '
+            + hand.indexFinger.dipPosition[1] + ' '
+            + hand.indexFinger.dipPosition[2];
+          path += pos + ', ';
+          var tube = document.createElement('a-sphere');
+          tube.setAttribute('material',"color: "+activeColor);
+          tube.setAttribute('color',activeColor);
+          tube.setAttribute('radius','0.01');
+          tube.setAttribute('position',path);
+          tube.setAttribute('path',path);
+          // console.log(this.el.sceneEl);
+          document.querySelector('a-scene').appendChild(tube);
+          // this.el.sceneEl.appendChild(tube);
+      }
+    </script> -->
   </head>
   <body>
-    <a-scene leap="host: 127.0.0.1" vr-mode-ui="enabled: true">
+    <a-scene leap="host: 127.0.0.1" vr-mode-ui="enabled: true" holdable>
       <a-entity camera wasd-controls look-controls position="0 0 0">
-          <a-entity leap-hand="hand: left; enablePhysics: true; rawMode: true;"></a-entity>
-          <a-entity leap-hand="hand: right; enablePhysics: true; rawMode: true;"></a-entity>
+          <a-entity leap-hand="hand: left; enablePhysics: true; rawMode:true"></a-entity>
+          <a-entity leap-hand="hand: right; enablePhysics: true; rawMode:true"></a-entity>
       </a-entity>
       <!-- <a-sky color="black"></a-sky> -->
     </a-scene>

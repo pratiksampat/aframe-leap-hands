@@ -13,7 +13,7 @@ Leap.Controller.plugin('transform', transform);
  */
 export const System = AFRAME.registerSystem('leap', {
   schema: {
-    host: {default: '192.168.0.1'},
+    host: {default: '127.0.0.1'},
     vr: {default: true},
     scale: {default: DEFAULT_SCALE},
     position: {

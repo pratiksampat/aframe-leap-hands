@@ -82,43 +82,43 @@
           }
       });
 
-      AFRAME.registerComponent('peaceable',{
-          init: function(){
-            this.handID =     /** @type {number} */            null;
-            this.creationToggle = false;
-            this.el.addEventListener('leap-peace', this.peace.bind(this));
-          },
-          peace: function(e){
-            console.log("Peace fired");
-            if(!this.creationToggle){
-              var boxes = document.querySelectorAll('[holdable]');
-              for(var i=0; i<boxes.length; i++){
-                boxes[i].setAttribute('visible',false);
-              }
-              var box = document.createElement('a-box');
-              box.setAttribute('height','0.1');
-              box.setAttribute('width','0.1');
-              box.setAttribute('depth','0.1');
-              box.setAttribute('color','yellow');
-              box.setAttribute('position','0 0.05 -0.2');
-              box.setAttribute('holdable','');
-              box.setAttribute('dynamic-body','shape: box');
-              console.log(box);
-              this.el.appendChild(box);
-              this.creationToggle = true;
-            }
-            else{
-              var boxes = document.querySelectorAll('[holdable]');
-              for(var i=0; i<boxes.length; i++){
-                boxes[i].setAttribute('dynamic-body','shape: box');
-                boxes[i].setAttribute('visible',true);
-              }
-              creationToggle = false;
-            }
-            this.handID = e.detail.handID;
-          }
+      // AFRAME.registerComponent('peaceable',{
+      //     init: function(){
+      //       this.handID =     /** @type {number} */            null;
+      //       this.creationToggle = false;
+      //       this.el.addEventListener('leap-peace', this.peace.bind(this));
+      //     },
+      //     peace: function(e){
+      //       console.log("Peace fired");
+      //       if(!this.creationToggle){
+      //         var boxes = document.querySelectorAll('[holdable]');
+      //         for(var i=0; i<boxes.length; i++){
+      //           boxes[i].setAttribute('visible',false);
+      //         }
+      //         var box = document.createElement('a-box');
+      //         box.setAttribute('height','0.1');
+      //         box.setAttribute('width','0.1');
+      //         box.setAttribute('depth','0.1');
+      //         box.setAttribute('color','yellow');
+      //         box.setAttribute('position','0 0.05 -0.2');
+      //         box.setAttribute('holdable','');
+      //         box.setAttribute('dynamic-body','shape: box');
+      //         console.log(box);
+      //         this.el.appendChild(box);
+      //         this.creationToggle = true;
+      //       }
+      //       else{
+      //         var boxes = document.querySelectorAll('[holdable]');
+      //         for(var i=0; i<boxes.length; i++){
+      //           boxes[i].setAttribute('dynamic-body','shape: box');
+      //           boxes[i].setAttribute('visible',true);
+      //         }
+      //         creationToggle = false;
+      //       }
+      //       this.handID = e.detail.handID;
+      //     }
           
-      }); 
+      // }); 
     </script>
   </head>
   <body>
@@ -130,13 +130,11 @@
         <!-- <a-cylinder tappable color="blue" radius='0.02' height="0.0025" position="-0.125 0 -0.1" rotation="90 0 0">    -->
         </a-cylinder>
       </a-entity>
-      <!-- <a-box width="0.25" height="0.25" depth="0.25" position="-0.125 0.13 -0.5" color="red"
+      <a-box width="0.25" height="0.25" depth="0.25" position="-0.125 0.13 -0.5" color="red"
              holdable dynamic-body="shape: box"></a-box>
       <a-box width="0.25" height="0.25" depth="0.25" position="0.00 0.4 -0.5" color="green"
              holdable dynamic-body="shape: box"></a-box>
       <a-box width="0.25" height="0.25" depth="0.25" position="0.125 0.13 -0.5" color="blue"
-             holdable dynamic-body="shape: box"></a-box> -->
-      <a-box id="hold" width="0.1" height="0.1" depth="0.1" position="0 0.13 -0.3" color="red"
              holdable dynamic-body="shape: box"></a-box>
       <!-- <a-box id="hold" width="0.25" height="0.25" depth="0.25" position="0.00 0.4 -0.5" color="green"
              holdable dynamic-body="shape: box"></a-box>

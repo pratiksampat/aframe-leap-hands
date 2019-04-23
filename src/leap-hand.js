@@ -123,14 +123,14 @@ const Component = AFRAME.registerComponent('leap-hand', {
               sphere.setAttribute('id','rawColor');
               sphere.setAttribute('color',rawColor);
               sphere.setAttribute('radius','0.1');
-              sphere.setAttribute('position','0 0 -2');
+              sphere.setAttribute('position','0 1.6 -2');
               this.el.sceneEl.appendChild(sphere);
 
               var text = document.createElement('a-text');
               text.setAttribute('id','rawColorText');
               text.setAttribute('color','black');
               text.setAttribute('value',"Color");
-              text.setAttribute('position','0.2 0 -2')
+              text.setAttribute('position','0.2 1.6 -2')
               this.el.sceneEl.appendChild(text);
           }
           else if(hand.indexFinger.extended && hand.middleFinger.extended 
@@ -165,7 +165,7 @@ const Component = AFRAME.registerComponent('leap-hand', {
               text.setAttribute('id','rawThicknessText');
               text.setAttribute('color','black');
               text.setAttribute('value',"Brush");
-              text.setAttribute('position','0.2 0 -2')
+              text.setAttribute('position','0.2 1.6 -2')
               this.el.sceneEl.appendChild(text);
           }
         }
@@ -202,7 +202,6 @@ const Component = AFRAME.registerComponent('leap-hand', {
             path += pos + ', ';
             console.log(path);
             var tube = document.createElement('a-tube');
-            console.log(rawColor);
             tube.setAttribute('material',"color: "+rawColor);
             tube.setAttribute('color',rawColor);
             tube.setAttribute('radius',rawThickness);
@@ -210,6 +209,7 @@ const Component = AFRAME.registerComponent('leap-hand', {
             tube.setAttribute('path',path);
             // console.log(sphere);
             // console.log(this.el.sceneEl);
+            document.getElementById('paint').appendChild(tube);
             this.el.sceneEl.appendChild(tube);
           }
           else{
@@ -238,11 +238,14 @@ const Component = AFRAME.registerComponent('leap-hand', {
     // console.log(hand);
     if(self.safeDetect == true){
       if(hand.frame.gestures.length > 0){
-        hand.frame.gestures.forEach(function(gesture){
+        // using some helps us break from the forEach loop
+        hand.frame.gestures.some(function(gesture){
+          // console.log(gesture);
           if(gesture.type == "circle" && gesture.state == "stop"){
             var eventDetail = self.getEventDetail(hand);
             self.el.emit('leap-circle',eventDetail);
             self.safeDetect = false;
+            return true;
           }
           else if(gesture.type == "swipe") {
             //Classify swipe as either horizontal or vertical
@@ -269,7 +272,7 @@ const Component = AFRAME.registerComponent('leap-hand', {
             eventDetail.swipeDirection = swipeDirection;
             self.el.emit('leap-swipe',eventDetail);
             self.safeDetect = false;
-            // self.thresholdTickCount = 300; 
+            return true;
           }
         });
       }
@@ -317,7 +320,9 @@ const Component = AFRAME.registerComponent('leap-hand', {
         var isHolding = Math.max(this.grabStrength, this.pinchStrength)
           > (this.isHolding ? this.data.releaseSensitivity : this.data.holdSensitivity);
         this.intersector.update(this.data, this.el.object3D, hand, isHolding);
-        if ( isHolding && !this.isHolding) this.hold(hand);
+        if ( isHolding && !this.isHolding){
+          this.hold(hand);
+        }         
         if (!isHolding &&  this.isHolding) this.release(hand); 
        }
     }
